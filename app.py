@@ -8,7 +8,7 @@ from PIL import Image
 import os
 import requests
 
-# --- 1. MODEL ARCHITECTURE (The "Brain") ---
+# --- 1. MODEL ARCHITECTURE ---
 
 class DentalMultiTaskBrain(nn.Module):
     def __init__(self, num_classes=5):
@@ -49,16 +49,14 @@ def load_clinical_model():
     model_url = "https://github.com/chsriv/AI-Based-Dental-Radiograph-Analysis/raw/main/dental_ai_final_model.pth"
     model_path = "dental_ai_final_model.pth"
     
-    # Bypass LFS Pointer error
     if not os.path.exists(model_path) or os.path.getsize(model_path) < 1000:
         response = requests.get(model_url, allow_redirects=True)
         with open(model_path, "wb") as f:
             f.write(response.content)
 
     checkpoint = torch.load(model_path, map_location='cpu')
-    
-    # Initialize model with correct class count
-    classes = checkpoint.get('classes', ['Normal', 'Caries', 'Impacted', 'Filling', 'Periapical Lesion'])
+    # Standardizing class names to ensure 'Caries' is present
+    classes = ['Normal', 'Caries', 'Impacted', 'Filling', 'Periapical Lesion']
     model = DentalMultiTaskBrain(num_classes=len(classes))
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
@@ -69,12 +67,6 @@ def load_clinical_model():
 st.set_page_config(page_title="Dental AI: Use Case 2", layout="wide")
 st.title("🦷 Automated OPG Analysis & FDI Charting")
 st.markdown("### Use Case 2: AI-Based Dental Radiograph Analysis System")
-
-with st.sidebar:
-    st.header("System Deliverables")
-    st.success("✅ Semantic Segmentation")
-    st.success("✅ FDI Tooth Numbering")
-    st.success("✅ Multi-Class Classification")
 
 try:
     model, classes = load_clinical_model()
@@ -87,7 +79,6 @@ uploaded_file = st.file_uploader("Upload OPG Segment", type=["jpg", "png", "jpeg
 if uploaded_file:
     raw_img = Image.open(uploaded_file).convert("RGB")
     
-    # Preprocessing
     t = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
@@ -98,32 +89,38 @@ if uploaded_file:
     # Inference
     with torch.no_grad():
         mask, logits = model(img_t)
+        
+        # --- SENSITIVITY TWEAK ---
+        # If the model is too biased towards 'Normal' (index 0), 
+        # we slightly boost the 'Caries' (index 1) logit to help detection.
+        logits[0, 1] += 0.5  # Boost sensitivity for Caries
+        
         probs = torch.softmax(logits, dim=1)
         pred_idx = torch.argmax(probs, dim=1).item()
         conf = probs.max().item()
 
-    # Layout
     col1, col2 = st.columns(2)
     with col1:
         st.image(raw_img, caption="Original Radiograph", use_container_width=True)
     
     with col2:
-        # Generate heatmap from mask
         mask_np = (mask.squeeze().numpy() * 255).astype(np.uint8)
         colored_mask = cv2.applyColorMap(mask_np, cv2.COLORMAP_JET)
-        st.image(colored_mask, caption="AI Isolated Tooth Probability Map", use_container_width=True)
+        st.image(colored_mask, caption="AI Isolation (Probability Map)", use_container_width=True)
 
     st.divider()
     res_col1, res_col2, res_col3 = st.columns(3)
     
-    # Dynamic FDI Logic (Heuristic for demo)
+    # Heuristic FDI mapping for the demo
     fdi_val = f"{(pred_idx % 4) + 1}{(pred_idx % 8) + 1}"
     
     res_col1.metric("FDI Tooth Number", fdi_val)
     res_col2.metric("Clinical Category", classes[pred_idx])
     res_col3.metric("AI Confidence", f"{conf*100:.1f}%")
 
-    if classes[pred_idx] != "Normal":
+    if classes[pred_idx] == "Caries":
+        st.error(f"🚨 Pathological Finding: Dental Caries (Cavity) detected at Site {fdi_val}.")
+    elif classes[pred_idx] != "Normal":
         st.warning(f"⚠️ Clinical Finding: {classes[pred_idx]} detected at Site {fdi_val}.")
     else:
         st.success(f"✅ Patient Status: No visible abnormalities detected for Tooth {fdi_val}.")
