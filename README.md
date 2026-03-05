@@ -21,6 +21,28 @@ This repository houses a high-throughput clinical diagnostic engine designed to 
 ## System Architecture
 The engine utilizes an EfficientNet-B0 backbone for feature extraction, bifurcating into a segmentation decoder and a classification head.
 
+## 🎨 Classification & Visualization Legend
+The system employs a standardized color-coding scheme to provide immediate diagnostic triage. Overlays are generated using a custom JET colormap where color intensity correlates with model confidence.
+
+| Color | Clinical Classification | Description |
+| :--- | :--- | :--- |
+| 🔴 **Red** | **Cavity** | Active radiolucent lesions requiring immediate intervention. |
+| 🔵 **Blue** | **Filling** | Existing restorative materials and prior dental history. |
+| 🟣 **Purple** | **Implant** | Integrated prosthetic hardware and osseointegration status. |
+| 🟡 **Yellow** | **Impacted Tooth** | Unerupted or obstructed dental structures. |
+| 🟢 **Green** | **Normal** | Healthy dental anatomy with no detectable pathology. |
+
+---
+
+## 🦷 Automated FDI Charting Logic
+Each detected segment is processed through a geometric centroid algorithm to assign the correct **ISO/FDI 2-Digit Notation**. 
+
+
+
+1. **Centroid Calculation**: Identifying the center of the segmentation mask.
+2. **Quadrant Detection**: Determining the dental arch position (1-4).
+3. **FDI Assignment**: Mapping the tooth to its specific number (e.g., Tooth 21) for automated electronic health record (EHR) entry.
+
 
 
 ```mermaid
