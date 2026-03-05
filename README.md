@@ -14,7 +14,7 @@ This repository houses a high-throughput clinical diagnostic engine designed to 
 ---
 
 ## Tech Stack
-[![My Skills](https://skillicons.dev/icons?i=py,pytorch,opencv,github)](https://skillicons.dev)
+[![My Skills](https://skillicons.dev/icons?i=py,pytorch,opencv,streamlit,kaggle,github)](https://skillicons.dev)
 
 ---
 
