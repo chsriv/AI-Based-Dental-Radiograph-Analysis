@@ -126,5 +126,4 @@ if uploaded_file:
     if classes[pred_idx] != "Normal":
         st.warning(f"⚠️ Clinical Finding: {classes[pred_idx]} detected at Site {fdi_val}.")
     else:
-        st.balloons()
-        st.success("Analysis Complete: No abnormalities detected.")
+        st.success(f"✅ Patient Status: No visible abnormalities detected for Tooth {fdi_val}.")
