@@ -98,7 +98,6 @@ for cls, color in colors.items():
 
 st.sidebar.divider()
 st.sidebar.write("**Architecture:** EfficientNet-B0 + U-Net")
-st.sidebar.write("**Accuracy:** 98.2%")
 
 # Main Logic
 uploaded_file = st.file_uploader("Upload Panoramic OPG (PNG/JPG)", type=["jpg", "png", "jpeg"])
